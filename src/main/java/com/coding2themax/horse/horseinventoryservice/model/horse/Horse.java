@@ -1,4 +1,4 @@
-package com.coding2themax.horse.horseiventoryservice.model;
+package com.coding2themax.horse.horseinventoryservice.model.horse;
 
 public class Horse {
 

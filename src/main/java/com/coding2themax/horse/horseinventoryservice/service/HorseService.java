@@ -1,11 +1,11 @@
-package com.coding2themax.horse.horseiventoryservice.service;
+package com.coding2themax.horse.horseinventoryservice.service;
 
 import java.util.List;
 
-import com.coding2themax.horse.horseiventoryservice.model.Horse;
-import com.coding2themax.horse.horseiventoryservice.model.HorseCoatPattern;
-import com.coding2themax.horse.horseiventoryservice.model.HorseColor;
-import com.coding2themax.horse.horseiventoryservice.model.HorseTraining;
+import com.coding2themax.horse.horseinventoryservice.model.horse.Horse;
+import com.coding2themax.horse.horseinventoryservice.model.horse.HorseCoatPattern;
+import com.coding2themax.horse.horseinventoryservice.model.horse.HorseColor;
+import com.coding2themax.horse.horseinventoryservice.model.horse.HorseTraining;
 
 public interface HorseService {
   Horse createHorse(Horse horse);
@@ -32,4 +32,5 @@ public interface HorseService {
 
   List<Horse> getHorsesByColorAndCoatPatternAndTraining(HorseColor color, HorseCoatPattern coatPattern,
       HorseTraining training);
+
 }

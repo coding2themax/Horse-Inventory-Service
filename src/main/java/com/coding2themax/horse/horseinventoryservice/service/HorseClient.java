@@ -1,12 +1,12 @@
 // implement the HorseService interface
-package com.coding2themax.horse.horseiventoryservice.service;
+package com.coding2themax.horse.horseinventoryservice.service;
 
 import java.util.List;
 
-import com.coding2themax.horse.horseiventoryservice.model.Horse;
-import com.coding2themax.horse.horseiventoryservice.model.HorseCoatPattern;
-import com.coding2themax.horse.horseiventoryservice.model.HorseColor;
-import com.coding2themax.horse.horseiventoryservice.model.HorseTraining;
+import com.coding2themax.horse.horseinventoryservice.model.horse.Horse;
+import com.coding2themax.horse.horseinventoryservice.model.horse.HorseCoatPattern;
+import com.coding2themax.horse.horseinventoryservice.model.horse.HorseColor;
+import com.coding2themax.horse.horseinventoryservice.model.horse.HorseTraining;
 
 /**
  * The HorseClient class implements the HorseService interface and provides
