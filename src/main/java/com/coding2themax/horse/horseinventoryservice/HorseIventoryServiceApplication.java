@@ -1,4 +1,4 @@
-package com.coding2themax.horse.horseiventoryservice;
+package com.coding2themax.horse.horseinventoryservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
