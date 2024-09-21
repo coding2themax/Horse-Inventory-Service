@@ -4,23 +4,29 @@ public class HorseProduct {
   private String productId;
   private String name;
   private String category;
-  private double price;
   private int stock;
+  private double price;
+  private double cost;
 
   // Default constructor
   public HorseProduct() {
   }
 
   // Parameterized constructor
-  public HorseProduct(String productId, String name, String category, double price, int stock) {
+  public HorseProduct(String productId, String name, String category, int stock, double price, double cost) {
     this.productId = productId;
     this.name = name;
     this.category = category;
-    this.price = price;
     this.stock = stock;
+    this.price = price;
+    this.cost = cost;
   }
 
   // Getters and Setters
+  public double getCost() {
+    return cost;
+  }
+
   public String getProductId() {
     return productId;
   }
