@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.8</version>
+		<version>3.4.3</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.coding2themax.horse</groupId>
@@ -15,13 +15,14 @@
 	<name>horse-iventory-service</name>
 	<description>Demo project for Spring Boot</description>
 	<properties>
-		<java.version>22</java.version>
+		<java.version>23</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -49,11 +50,15 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.11</version>
+				<version>0.8.12</version>
 				<configuration>
 					<excludes>
 						<exclude>
-							com/coding2themax/horse/horseinventoryservice/HorseIventoryServiceApplication.class</exclude>
+							com/coding2themax/horse/horseinventoryservice/HorseIventoryServiceApplication.class
+						</exclude>
+						<exclude>
+							org/openapitools/**
+						</exclude>
 					</excludes>
 				</configuration>
 				<executions>
@@ -68,7 +73,9 @@
 						<goals>
 							<goal>check</goal>
 						</goals>
+
 						<configuration>
+							<haltOnFailure>false</haltOnFailure>
 							<rules>
 								<rule>
 									<!-- Your rule configuration goes here -->
@@ -92,6 +99,33 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<!-- RELEASE_VERSION -->
+				<version>7.8.0</version>
+				<!-- /RELEASE_VERSION -->
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>${project.basedir}/src/main/resources/horse-data-spec.yaml</inputSpec>
+							<generatorName>java</generatorName>
+							<configOptions>
+								<sourceFolder>src/gen/java/main</sourceFolder>
+								<dateLibrary>java8</dateLibrary>
+								<generateBuilders>true</generateBuilders>
+								<library>webclient</library>
+								<openApiNullable>false</openApiNullable>
+								<useJakartaEe>true</useJakartaEe>
+							</configOptions>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

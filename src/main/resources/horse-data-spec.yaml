@@ -1,0 +1,100 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:13000
+  description: Generated server url
+paths:
+  /horses:
+    get:
+      tags:
+      - horse-reactive-repo-service
+      operationId: getAllHorses
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Horse"
+    post:
+      tags:
+      - horse-reactive-repo-service
+      operationId: createHorse
+      parameters:
+      - name: horse
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Horse"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Horse"
+  /horses/{id}:
+    get:
+      tags:
+      - horse-reactive-repo-service
+      operationId: getHorseById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Horse"
+    delete:
+      tags:
+      - horse-reactive-repo-service
+      operationId: deleteHorse
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Horse"
+components:
+  schemas:
+    Horse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        statusID:
+          type: integer
+          format: int32
+        name:
+          type: string
+        breed:
+          type: string
+        color:
+          type: string
+        age:
+          type: integer
+          format: int32
+        coatPattern:
+          type: string
+        trainingLevel:
+          type: string
+        new:
+          type: boolean
