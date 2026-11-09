@@ -23,6 +23,12 @@
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 
+		<!-- Feed purchase saga messaging -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -34,6 +40,11 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.amqp</groupId>
+			<artifactId>spring-rabbit-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -42,23 +53,14 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
-
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.12</version>
+				<version>0.8.13</version>
 				<configuration>
 					<excludes>
-						<exclude>
-							com/coding2themax/horse/horseinventoryservice/HorseIventoryServiceApplication.class
-						</exclude>
-						<exclude>
-							org/openapitools/**
-						</exclude>
+						<exclude>com/coding2themax/horse/horseinventoryservice/HorseIventoryServiceApplication.class</exclude>
+						<exclude>org/openapitools/**</exclude>
 					</excludes>
 				</configuration>
 				<executions>
@@ -69,36 +71,32 @@
 						</goals>
 					</execution>
 					<execution>
-						<id>check</id>
-						<goals>
-							<goal>check</goal>
-						</goals>
-
-						<configuration>
-							<haltOnFailure>false</haltOnFailure>
-							<rules>
-								<rule>
-									<!-- Your rule configuration goes here -->
-									<rule>
-										<element>PACKAGE</element>
-										<limits>
-											<limit>
-												<counter>INSTRUCTION</counter>
-												<value>COVEREDRATIO</value>
-												<minimum>0.90</minimum>
-											</limit>
-										</limits>
-									</rule>
-								</rule>
-							</rules>
-						</configuration>
-					</execution>
-					<execution>
 						<id>report</id>
 						<phase>test</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+					<!-- Fails `mvn verify` when any package is below 90% instruction coverage -->
+					<execution>
+						<id>check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>PACKAGE</element>
+									<limits>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.90</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
