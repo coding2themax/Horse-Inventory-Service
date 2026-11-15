@@ -117,6 +117,8 @@
 						<configuration>
 							<inputSpec>${project.basedir}/src/main/resources/horse-data-spec.yaml</inputSpec>
 							<generatorName>java</generatorName>
+							<!-- Only emit the Java client sources; skip the standalone Gradle/SBT/Maven scaffolding. -->
+							<supportingFilesToGenerate>ApiClient.java,JavaTimeFormatter.java,RFC3339DateFormat.java,ServerConfiguration.java,ServerVariable.java,StringUtil.java,ApiKeyAuth.java,Authentication.java,HttpBasicAuth.java,HttpBearerAuth.java</supportingFilesToGenerate>
 							<configOptions>
 								<sourceFolder>src/gen/java/main</sourceFolder>
 								<dateLibrary>java8</dateLibrary>
