@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 import com.coding2themax.horse.horseinventoryservice.service.HorseGoodService;
+import com.coding2themax.horse.horseinventoryservice.service.HorseService;
 
 @SpringBootTest
 class HorseIventoryServiceApplicationTest {
@@ -16,7 +17,8 @@ class HorseIventoryServiceApplicationTest {
   private ApplicationContext context;
 
   @Test
-  void contextLoadsWithHorseGoodService() {
+  void contextLoadsWithServices() {
     assertNotNull(context.getBean(HorseGoodService.class));
+    assertNotNull(context.getBean(HorseService.class));
   }
 }

@@ -1,12 +1,13 @@
 package com.coding2themax.horse.horseinventoryservice.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.coding2themax.horse.horseinventoryservice.model.store.HorseGoods;
@@ -18,7 +19,7 @@ import reactor.core.publisher.Mono;
 @WebFluxTest(HorseGoodsController.class)
 class HorseGoodsControllerTest {
 
-  @MockBean
+  @MockitoBean
   HorseGoodService horseGoodService;
 
   @Autowired
@@ -67,6 +68,48 @@ class HorseGoodsControllerTest {
     when(horseGoodService.getHorseGoodById("missing")).thenReturn(Mono.empty());
 
     webClient.get().uri("/horsegoods/missing")
+        .exchange()
+        .expectStatus().isNotFound();
+  }
+
+  @Test
+  void testUpdateHorseGood() {
+    when(horseGoodService.updateHorseGood(eq("1"), any(HorseGoods.class)))
+        .thenReturn(Mono.just(new HorseGoods("1", "Saddle", "Synthetic")));
+
+    webClient.put().uri("/horsegoods/1")
+        .bodyValue(new HorseGoods(null, "Saddle", "Synthetic"))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.description").isEqualTo("Synthetic");
+  }
+
+  @Test
+  void testUpdateHorseGoodNotFound() {
+    when(horseGoodService.updateHorseGood(eq("missing"), any(HorseGoods.class))).thenReturn(Mono.empty());
+
+    webClient.put().uri("/horsegoods/missing")
+        .bodyValue(new HorseGoods(null, "Saddle", "Synthetic"))
+        .exchange()
+        .expectStatus().isNotFound();
+  }
+
+  @Test
+  void testDeleteHorseGood() {
+    when(horseGoodService.deleteHorseGood("1"))
+        .thenReturn(Mono.just(new HorseGoods("1", "Saddle", "Leather")));
+
+    webClient.delete().uri("/horsegoods/1")
+        .exchange()
+        .expectStatus().isNoContent();
+  }
+
+  @Test
+  void testDeleteHorseGoodNotFound() {
+    when(horseGoodService.deleteHorseGood("missing")).thenReturn(Mono.empty());
+
+    webClient.delete().uri("/horsegoods/missing")
         .exchange()
         .expectStatus().isNotFound();
   }

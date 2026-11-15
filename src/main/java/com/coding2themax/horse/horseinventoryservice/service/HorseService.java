@@ -1,36 +1,27 @@
 package com.coding2themax.horse.horseinventoryservice.service;
 
-import java.util.List;
-
 import com.coding2themax.horse.horseinventoryservice.model.horse.Horse;
 import com.coding2themax.horse.horseinventoryservice.model.horse.HorseCoatPattern;
 import com.coding2themax.horse.horseinventoryservice.model.horse.HorseColor;
 import com.coding2themax.horse.horseinventoryservice.model.horse.HorseTraining;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 public interface HorseService {
-  Horse createHorse(Horse horse);
+  Mono<Horse> createHorse(Horse horse);
 
-  Horse getHorse(Long id);
+  /** Emits the horse, or completes empty if it does not exist. */
+  Mono<Horse> getHorse(String id);
 
-  List<Horse> getHorses();
+  Flux<Horse> getHorses();
 
-  Horse updateHorse(Horse horse);
+  /** Emits the deleted horse, or completes empty if it did not exist. */
+  Mono<Horse> deleteHorse(String id);
 
-  void deleteHorse(Long id);
-
-  List<Horse> getHorsesByColor(HorseColor color);
-
-  List<Horse> getHorsesByCoatPattern(HorseCoatPattern coatPattern);
-
-  List<Horse> getHorsesByTraining(HorseTraining training);
-
-  List<Horse> getHorsesByColorAndCoatPattern(HorseColor color, HorseCoatPattern coatPattern);
-
-  List<Horse> getHorsesByColorAndTraining(HorseColor color, HorseTraining training);
-
-  List<Horse> getHorsesByCoatPatternAndTraining(HorseCoatPattern coatPattern, HorseTraining training);
-
-  List<Horse> getHorsesByColorAndCoatPatternAndTraining(HorseColor color, HorseCoatPattern coatPattern,
-      HorseTraining training);
-
+  /**
+   * Finds horses matching every non-null criterion. Passing {@code null} for a
+   * criterion matches any value; passing all {@code null}s returns every horse.
+   */
+  Flux<Horse> findHorses(HorseColor color, HorseCoatPattern coatPattern, HorseTraining training);
 }
