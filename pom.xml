@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.3</version>
+		<version>4.1.2</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.coding2themax.horse</groupId>
@@ -15,7 +15,7 @@
 	<name>horse-iventory-service</name>
 	<description>Demo project for Spring Boot</description>
 	<properties>
-		<java.version>23</java.version>
+		<java.version>27</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -26,7 +26,7 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-webflux-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -45,7 +45,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.12</version>
+				<version>0.8.16</version>
 				<configuration>
 					<excludes>
 						<exclude>
@@ -99,7 +99,7 @@
 				<groupId>org.openapitools</groupId>
 				<artifactId>openapi-generator-maven-plugin</artifactId>
 				<!-- RELEASE_VERSION -->
-				<version>7.8.0</version>
+				<version>7.27.0</version>
 				<!-- /RELEASE_VERSION -->
 				<executions>
 					<execution>
@@ -110,7 +110,7 @@
 							<inputSpec>${project.basedir}/src/main/resources/horse-data-spec.yaml</inputSpec>
 							<generatorName>java</generatorName>
 							<!-- Only emit the Java client sources; skip the standalone Gradle/SBT/Maven scaffolding. -->
-							<supportingFilesToGenerate>ApiClient.java,JavaTimeFormatter.java,RFC3339DateFormat.java,ServerConfiguration.java,ServerVariable.java,StringUtil.java,ApiKeyAuth.java,Authentication.java,HttpBasicAuth.java,HttpBearerAuth.java</supportingFilesToGenerate>
+							<supportingFilesToGenerate>ApiClient.java,ExceptionProvider.java,JavaTimeFormatter.java,RFC3339DateFormat.java,ServerConfiguration.java,ServerVariable.java,StringUtil.java,ApiKeyAuth.java,Authentication.java,HttpBasicAuth.java,HttpBearerAuth.java</supportingFilesToGenerate>
 							<configOptions>
 								<sourceFolder>src/gen/java/main</sourceFolder>
 								<dateLibrary>java8</dateLibrary>
@@ -118,6 +118,8 @@
 								<library>webclient</library>
 								<openApiNullable>false</openApiNullable>
 								<useJakartaEe>true</useJakartaEe>
+								<useSpringBoot4>true</useSpringBoot4>
+								<useJackson3>true</useJackson3>
 							</configOptions>
 						</configuration>
 					</execution>
