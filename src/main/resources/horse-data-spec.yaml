@@ -1,100 +1,213 @@
 openapi: 3.0.1
 info:
-  title: OpenAPI definition
-  version: v0
+  title: Horse Data Service
+  description: >-
+    System of record for horses. The horse inventory service consumes this API
+    through a client generated from this document.
+  version: 1.0.0
 servers:
 - url: http://localhost:13000
-  description: Generated server url
+  description: Local development
+tags:
+- name: horse-reactive-repo-service
 paths:
   /horses:
     get:
       tags:
       - horse-reactive-repo-service
       operationId: getAllHorses
+      summary: List horses, optionally filtered
+      description: >-
+        Returns every horse matching all supplied filters. Omitted filters match
+        any value; with no filters every horse is returned.
+      parameters:
+      - name: color
+        in: query
+        required: false
+        schema:
+          $ref: "#/components/schemas/HorseColor"
+      - name: coatPattern
+        in: query
+        required: false
+        schema:
+          $ref: "#/components/schemas/HorseCoatPattern"
+      - name: trainingLevel
+        in: query
+        required: false
+        schema:
+          $ref: "#/components/schemas/HorseTrainingLevel"
       responses:
         "200":
-          description: OK
+          description: Matching horses
           content:
-            '*/*':
+            application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/Horse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
     post:
       tags:
       - horse-reactive-repo-service
       operationId: createHorse
-      parameters:
-      - name: horse
-        in: query
+      summary: Create a horse
+      description: The server assigns the id; any id in the request body is ignored.
+      requestBody:
         required: true
-        schema:
-          $ref: "#/components/schemas/Horse"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Horse"
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/Horse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /horses/{id}:
+    parameters:
+    - $ref: "#/components/parameters/HorseId"
     get:
       tags:
       - horse-reactive-repo-service
       operationId: getHorseById
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+      summary: Get a horse
       responses:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/Horse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+      - horse-reactive-repo-service
+      operationId: updateHorse
+      summary: Replace a horse
+      description: Replaces every field of the horse. The id in the path wins over any id in the body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Horse"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Horse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
     delete:
       tags:
       - horse-reactive-repo-service
       operationId: deleteHorse
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+      summary: Delete a horse
       responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/Horse"
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
+  parameters:
+    HorseId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int32
+  responses:
+    BadRequest:
+      description: The request was invalid (for example an unknown enum value or missing name)
+    NotFound:
+      description: No horse exists with the given id
   schemas:
     Horse:
       type: object
+      required:
+      - name
       properties:
         id:
           type: integer
           format: int32
+          readOnly: true
         statusID:
           type: integer
           format: int32
         name:
           type: string
+          minLength: 1
         breed:
           type: string
         color:
-          type: string
+          $ref: "#/components/schemas/HorseColor"
         age:
           type: integer
           format: int32
+          minimum: 0
         coatPattern:
-          type: string
+          $ref: "#/components/schemas/HorseCoatPattern"
         trainingLevel:
-          type: string
-        new:
-          type: boolean
+          $ref: "#/components/schemas/HorseTrainingLevel"
+    HorseColor:
+      type: string
+      enum:
+      - WHITE
+      - BLACK
+      - BROWN
+      - GRAY
+      - CHESTNUT
+      - PALOMINO
+      - BUCKSKIN
+      - ROAN
+      - DUN
+    HorseCoatPattern:
+      type: string
+      enum:
+      - APPALOOSA
+      - PALOMINO
+      - PINTO
+      - ROAN
+      - GRULLO
+      - SABINO
+      - TOBIANO
+      - OVERO
+      - SPLASH_WHITE
+      - CREMELLO
+      - PERLINO
+      - CHAMPAGNE
+      - SILVER_DAPPLE
+      - LEOPARD
+      - TOVERO
+      - FRAME_OVERO
+      - TOBIANO_OVERO
+      - TOBIANO_TOVERO
+      - SABINO_OVERO
+      - SABINO_TOVERO
+      - MAX_SPLASH_WHITE
+      - MAX_SABINO
+      - MAX_TOVERO
+      - MAX_FRAME_OVERO
+      - MAX_TOBIANO_OVERO
+      - MAX_TOBIANO_TOVERO
+      - MAX_SABINO_OVERO
+      - MAX_SABINO_TOVERO
+    HorseTrainingLevel:
+      type: string
+      enum:
+      - BASIC
+      - INITIAL_BACKING
+      - GREEN_BROKE
+      - INTERMEDIATE
+      - ADVANCED

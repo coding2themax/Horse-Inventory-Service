@@ -3,6 +3,7 @@ package com.coding2themax.horse.horseinventoryservice.model.horse;
 public class Horse {
 
   private String id;
+  private Integer statusId;
   private String name;
   private int age;
   private String breed;
@@ -89,6 +90,14 @@ public class Horse {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public Integer getStatusId() {
+    return statusId;
+  }
+
+  public void setStatusId(Integer statusId) {
+    this.statusId = statusId;
   }
 
   public String getName() {

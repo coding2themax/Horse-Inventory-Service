@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.coding2themax.horse.horseinventoryservice.model.store.HorseGoods;
+import com.coding2themax.horse.horseinventoryservice.service.HorseGoodAlreadyExistsException;
 import com.coding2themax.horse.horseinventoryservice.service.HorseGoodService;
 
 import reactor.core.publisher.Flux;
@@ -41,10 +42,11 @@ public class HorseGoodsController {
     return horseGoodService.getAllHorseGoods();
   }
 
-  // add create horsegoods
   @PostMapping("/horsegoods")
   public Mono<HorseGoods> createHorseGood(@RequestBody HorseGoods horseGoods) {
-    return horseGoodService.createHorseGood(horseGoods);
+    return horseGoodService.createHorseGood(horseGoods)
+        .onErrorMap(HorseGoodAlreadyExistsException.class,
+            e -> new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e));
   }
 
   @PutMapping("/horsegoods/{id}")

@@ -11,6 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.coding2themax.horse.horseinventoryservice.model.store.HorseGoods;
+import com.coding2themax.horse.horseinventoryservice.service.HorseGoodAlreadyExistsException;
 import com.coding2themax.horse.horseinventoryservice.service.HorseGoodService;
 
 import reactor.core.publisher.Flux;
@@ -37,6 +38,17 @@ class HorseGoodsControllerTest {
         .expectBody()
         .jsonPath("$.goodsId").isEqualTo("1")
         .jsonPath("$.name").isEqualTo("Saddle");
+  }
+
+  @Test
+  void testCreateHorseGoodConflict() {
+    when(horseGoodService.createHorseGood(any(HorseGoods.class)))
+        .thenReturn(Mono.error(new HorseGoodAlreadyExistsException("1")));
+
+    webClient.post().uri("/horsegoods")
+        .bodyValue(new HorseGoods("1", "Saddle", "Leather"))
+        .exchange()
+        .expectStatus().isEqualTo(409);
   }
 
   @Test

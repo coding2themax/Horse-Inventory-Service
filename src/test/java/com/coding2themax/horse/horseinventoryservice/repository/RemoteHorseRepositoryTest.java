@@ -1,7 +1,11 @@
 package com.coding2themax.horse.horseinventoryservice.repository;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -9,8 +13,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openapitools.client.api.HorseReactiveRepoServiceApi;
 import org.openapitools.client.model.Horse;
+import org.openapitools.client.model.HorseCoatPattern;
+import org.openapitools.client.model.HorseColor;
+import org.openapitools.client.model.HorseTrainingLevel;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import reactor.core.publisher.Flux;
@@ -25,25 +33,37 @@ class RemoteHorseRepositoryTest {
    */
   private static final class StubApi extends HorseReactiveRepoServiceApi {
     private final Map<String, Supplier<Mono<Horse>>> responses = new HashMap<>();
+    private final Map<Integer, Supplier<Mono<ResponseEntity<Void>>>> deletes = new HashMap<>();
+    private final List<Object> lastFilters = new ArrayList<>();
     private Flux<Horse> all = Flux.empty();
 
     @Override
     public Mono<Horse> createHorse(Horse horse) {
-      return Mono.just(horse.id(1));
+      return Mono.just(new Horse(1).name(horse.getName()));
     }
 
     @Override
-    public Mono<Horse> getHorseById(String id) {
+    public Mono<Horse> updateHorse(Integer id, Horse horse) {
+      return responses.getOrDefault("update:" + id, Mono::empty).get();
+    }
+
+    @Override
+    public Mono<Horse> getHorseById(Integer id) {
       return responses.getOrDefault("get:" + id, Mono::empty).get();
     }
 
     @Override
-    public Mono<Horse> deleteHorse(String id) {
-      return responses.getOrDefault("delete:" + id, Mono::empty).get();
+    public Mono<ResponseEntity<Void>> deleteHorseWithHttpInfo(Integer id) {
+      return deletes.getOrDefault(id, () -> Mono.just(ResponseEntity.noContent().build())).get();
     }
 
     @Override
-    public Flux<Horse> getAllHorses() {
+    public Flux<Horse> getAllHorses(HorseColor color, HorseCoatPattern coatPattern,
+        HorseTrainingLevel trainingLevel) {
+      lastFilters.clear();
+      lastFilters.add(color);
+      lastFilters.add(coatPattern);
+      lastFilters.add(trainingLevel);
       return all;
     }
   }
@@ -70,48 +90,73 @@ class RemoteHorseRepositoryTest {
   }
 
   @Test
-  void getAllDelegatesToApi() {
-    api.all = Flux.just(new Horse().id(1), new Horse().id(2));
+  void getAllForwardsFiltersToApi() {
+    api.all = Flux.just(new Horse(1), new Horse(2));
 
-    StepVerifier.create(repository.getAllHorses()).expectNextCount(2).verifyComplete();
+    StepVerifier.create(repository.getAllHorses(HorseColor.BLACK, null, HorseTrainingLevel.BASIC))
+        .expectNextCount(2).verifyComplete();
+    assertEquals(List.of(HorseColor.BLACK, "none", HorseTrainingLevel.BASIC),
+        api.lastFilters.stream().map(f -> f == null ? "none" : f).toList());
   }
 
   @Test
   void getByIdReturnsHorse() {
-    Horse horse = new Horse().id(1);
+    Horse horse = new Horse(1);
     api.responses.put("get:1", () -> Mono.just(horse));
 
-    StepVerifier.create(repository.getHorseById("1")).expectNext(horse).verifyComplete();
+    StepVerifier.create(repository.getHorseById(1)).expectNext(horse).verifyComplete();
   }
 
   @Test
   void getByIdMapsNotFoundToEmpty() {
     api.responses.put("get:9", () -> Mono.error(error(HttpStatus.NOT_FOUND)));
 
-    StepVerifier.create(repository.getHorseById("9")).verifyComplete();
+    StepVerifier.create(repository.getHorseById(9)).verifyComplete();
   }
 
   @Test
   void getByIdPropagatesOtherErrors() {
     api.responses.put("get:1", () -> Mono.error(error(HttpStatus.INTERNAL_SERVER_ERROR)));
 
-    StepVerifier.create(repository.getHorseById("1"))
+    StepVerifier.create(repository.getHorseById(1))
         .expectError(WebClientResponseException.InternalServerError.class)
         .verify();
   }
 
   @Test
-  void deleteMapsNotFoundToEmpty() {
-    api.responses.put("delete:9", () -> Mono.error(error(HttpStatus.NOT_FOUND)));
+  void updateReturnsUpdatedHorse() {
+    Horse updated = new Horse(1).name("Renamed");
+    api.responses.put("update:1", () -> Mono.just(updated));
 
-    StepVerifier.create(repository.deleteHorse("9")).verifyComplete();
+    StepVerifier.create(repository.updateHorse(1, new Horse().name("Renamed")))
+        .expectNext(updated).verifyComplete();
   }
 
   @Test
-  void deleteReturnsDeletedHorse() {
-    Horse horse = new Horse().id(1);
-    api.responses.put("delete:1", () -> Mono.just(horse));
+  void updateMapsNotFoundToEmpty() {
+    api.responses.put("update:9", () -> Mono.error(error(HttpStatus.NOT_FOUND)));
 
-    StepVerifier.create(repository.deleteHorse("1")).expectNext(horse).verifyComplete();
+    StepVerifier.create(repository.updateHorse(9, new Horse().name("x"))).verifyComplete();
+  }
+
+  @Test
+  void deleteNoContentReturnsTrue() {
+    StepVerifier.create(repository.deleteHorse(1)).expectNext(true).verifyComplete();
+  }
+
+  @Test
+  void deleteMapsNotFoundToFalse() {
+    api.deletes.put(9, () -> Mono.error(error(HttpStatus.NOT_FOUND)));
+
+    StepVerifier.create(repository.deleteHorse(9)).expectNext(false).verifyComplete();
+  }
+
+  @Test
+  void deletePropagatesOtherErrors() {
+    api.deletes.put(1, () -> Mono.error(error(HttpStatus.INTERNAL_SERVER_ERROR)));
+
+    StepVerifier.create(repository.deleteHorse(1))
+        .expectError(WebClientResponseException.InternalServerError.class)
+        .verify();
   }
 }

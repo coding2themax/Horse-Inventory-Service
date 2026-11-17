@@ -40,6 +40,32 @@ class InMemoryHorseGoodServiceTest {
   }
 
   @Test
+  void createRejectsDuplicateIdWithoutOverwriting() {
+    service.createHorseGood(new HorseGoods("abc", "Bridle", "Nylon")).block();
+
+    StepVerifier.create(service.createHorseGood(new HorseGoods("abc", "Saddle", "Leather")))
+        .expectError(HorseGoodAlreadyExistsException.class)
+        .verify();
+    StepVerifier.create(service.getHorseGoodById("abc"))
+        .assertNext(found -> assertEquals("Bridle", found.getName()))
+        .verifyComplete();
+  }
+
+  @Test
+  void returnedItemsAreCopiesOfStoredState() {
+    service.createHorseGood(new HorseGoods("abc", "Bridle", "Nylon")).block().setName("changed");
+    service.getHorseGoodById("abc").block().withGoodsId("xyz").setName("changed");
+    service.getAllHorseGoods().blockFirst().setName("changed");
+
+    StepVerifier.create(service.getHorseGoodById("abc"))
+        .assertNext(found -> {
+          assertEquals("abc", found.getGoodsId());
+          assertEquals("Bridle", found.getName());
+        })
+        .verifyComplete();
+  }
+
+  @Test
   void getMissingIsEmpty() {
     StepVerifier.create(service.getHorseGoodById("nope")).verifyComplete();
   }
