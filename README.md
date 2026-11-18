@@ -1,7 +1,7 @@
 # Horse Inventory Service
 
 [![Maven Tests](https://github.com/coding2themax/Horse-Inventory-Service/actions/workflows/maven-tests.yml/badge.svg)](https://github.com/coding2themax/Horse-Inventory-Service/actions/workflows/maven-tests.yml)
-[![codecov](https://codecov.io/gh/coding2themax/Horse-Inventory-Service/graph/badge.svg)](https://codecov.io/gh/coding2themax/Horse-Inventory-Service)
+[![codecov](https://codecov.io/gh/coding2themax/Horse-Inventory-Service/graph/badge.svg?token=140O794JPA)](https://codecov.io/gh/coding2themax/Horse-Inventory-Service)
 
 Spring Boot WebFlux service for horse inventory and horse goods. Horse data is
 read from a separate horse data service through a client generated from
