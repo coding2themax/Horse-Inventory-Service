@@ -1,36 +1,35 @@
 package com.coding2themax.horse.horseinventoryservice.service;
 
-import java.util.List;
-
 import com.coding2themax.horse.horseinventoryservice.model.horse.Horse;
 import com.coding2themax.horse.horseinventoryservice.model.horse.HorseCoatPattern;
 import com.coding2themax.horse.horseinventoryservice.model.horse.HorseColor;
 import com.coding2themax.horse.horseinventoryservice.model.horse.HorseTraining;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+/**
+ * Horse inventory operations. Methods that take an id error with
+ * {@link IllegalArgumentException} if the id is not a valid integer.
+ */
 public interface HorseService {
-  Horse createHorse(Horse horse);
+  /** Creates a horse. The id is assigned by the data service; any id on the input is ignored. */
+  Mono<Horse> createHorse(Horse horse);
 
-  Horse getHorse(Long id);
+  /** Emits the horse, or completes empty if it does not exist. */
+  Mono<Horse> getHorse(String id);
 
-  List<Horse> getHorses();
+  Flux<Horse> getHorses();
 
-  Horse updateHorse(Horse horse);
+  /** Replaces the horse's fields. Emits the updated horse, or completes empty if it does not exist. */
+  Mono<Horse> updateHorse(String id, Horse horse);
 
-  void deleteHorse(Long id);
+  /** Emits {@code true} if the horse was deleted, {@code false} if it did not exist. */
+  Mono<Boolean> deleteHorse(String id);
 
-  List<Horse> getHorsesByColor(HorseColor color);
-
-  List<Horse> getHorsesByCoatPattern(HorseCoatPattern coatPattern);
-
-  List<Horse> getHorsesByTraining(HorseTraining training);
-
-  List<Horse> getHorsesByColorAndCoatPattern(HorseColor color, HorseCoatPattern coatPattern);
-
-  List<Horse> getHorsesByColorAndTraining(HorseColor color, HorseTraining training);
-
-  List<Horse> getHorsesByCoatPatternAndTraining(HorseCoatPattern coatPattern, HorseTraining training);
-
-  List<Horse> getHorsesByColorAndCoatPatternAndTraining(HorseColor color, HorseCoatPattern coatPattern,
-      HorseTraining training);
-
+  /**
+   * Finds horses matching every non-null criterion. Passing {@code null} for a
+   * criterion matches any value; passing all {@code null}s returns every horse.
+   */
+  Flux<Horse> findHorses(HorseColor color, HorseCoatPattern coatPattern, HorseTraining training);
 }

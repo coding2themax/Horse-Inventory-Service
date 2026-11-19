@@ -2,15 +2,22 @@ package com.coding2themax.horse.horseinventoryservice.model.horse;
 
 public class Horse {
 
+  private String id;
+  private Integer statusId;
   private String name;
   private int age;
   private String breed;
   private HorseTraining training;
   private HorseCoatPattern coatPattern;
 
-  public Horse(String name2, int age2, String breed2, HorseTraining training2, HorseCoatPattern coatPattern2,
-      HorseColor color2) {
-    // TODO Auto-generated constructor stub
+  public Horse(String name, int age, String breed, HorseTraining training, HorseCoatPattern coatPattern,
+      HorseColor color) {
+    this.name = name;
+    this.age = age;
+    this.breed = breed;
+    this.training = training;
+    this.coatPattern = coatPattern;
+    this.color = color;
   }
 
   public HorseCoatPattern getCoatPattern() {
@@ -75,6 +82,22 @@ public class Horse {
     public Horse build() {
       return new Horse(name, age, breed, training, coatPattern, color);
     }
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
+
+  public Integer getStatusId() {
+    return statusId;
+  }
+
+  public void setStatusId(Integer statusId) {
+    this.statusId = statusId;
   }
 
   public String getName() {
