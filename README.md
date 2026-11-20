@@ -16,6 +16,18 @@ Requires JDK 27.
 ./mvnw verify   # generate the client, run tests, enforce 90% JaCoCo coverage
 ```
 
+## Docker image
+
+```bash
+docker build -t horse-inventory-service .
+docker run -p 8080:8080 -e HORSE_REPO_SERVICE_URL=http://host.docker.internal:13000 horse-inventory-service
+```
+
+After **Maven Tests** passes on `main`, the **Publish Image** workflow pushes the
+image to Amazon ECR tagged with the commit SHA and `latest`. It authenticates
+through GitHub OIDC and reads these repository variables: `AWS_REGION`,
+`AWS_ROLE_ARN` and `ECR_REPOSITORY`.
+
 ## Configuration
 
 | Property | Env var | Default |
