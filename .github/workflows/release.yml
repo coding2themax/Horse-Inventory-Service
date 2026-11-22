@@ -1,0 +1,130 @@
+name: Create Release
+
+# Validates a version, creates the tag and GitHub release, then publishes the
+# Docker image to Amazon ECR. Run it from main in the Actions tab, or with:
+#   gh workflow run release.yml -f version=1.2.0
+#
+# A release created with GITHUB_TOKEN does not trigger other workflows, so this
+# workflow calls Publish Image directly.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, as MAJOR.MINOR.PATCH (e.g. 1.2.0)
+        required: true
+        type: string
+      commit:
+        description: Commit on main to release (defaults to the head of main)
+        required: false
+        type: string
+
+concurrency:
+  group: create-release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # look up the Maven Tests run for the release commit
+      contents: read
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      commit: ${{ steps.commit.outputs.sha }}
+    steps:
+      - name: Verify workflow runs from main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Run this workflow from main, not $GITHUB_REF."
+            exit 1
+          fi
+
+      - name: Validate version
+        id: version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          number='(0|[1-9][0-9]*)'
+          if ! [[ "$VERSION" =~ ^$number\.$number\.$number$ ]]; then
+            echo "::error::Version must be MAJOR.MINOR.PATCH, for example 1.2.0."
+            exit 1
+          fi
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0 # full history for the ancestry check
+
+      # Use the full ref so a tag named "main" cannot satisfy the check.
+      - name: Resolve commit on main
+        id: commit
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          main=refs/remotes/origin/main
+          if [ -z "$COMMIT" ]; then
+            sha=$(git rev-parse --verify "$main^{commit}")
+          elif [[ "$COMMIT" =~ ^[0-9a-f]{7,40}$ ]]; then
+            if ! sha=$(git rev-parse --verify --quiet "$COMMIT^{commit}"); then
+              echo "::error::Commit $COMMIT was not found."
+              exit 1
+            fi
+          else
+            echo "::error::Commit must be a 7 to 40 character lowercase hex SHA."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$sha" "$main"; then
+            echo "::error::$sha is not on main, refusing to release."
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag does not exist
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if [ -n "$(git ls-remote --tags origin "refs/tags/$TAG")" ]; then
+            echo "::error::Tag $TAG already exists. Release a new version instead."
+            exit 1
+          fi
+
+      - name: Verify Maven Tests passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          passed=$(gh run list --workflow maven-tests.yml --commit "$COMMIT_SHA" \
+            --status success --limit 1 --json databaseId --jq length)
+          if [ "$passed" -eq 0 ]; then
+            echo "::error::$COMMIT_SHA has no successful Maven Tests run, refusing to release."
+            exit 1
+          fi
+
+  release:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the tag and release
+    steps:
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          COMMIT_SHA: ${{ needs.prepare.outputs.commit }}
+        run: gh release create "$TAG" --target "$COMMIT_SHA" --title "$TAG" --generate-notes
+
+  publish:
+    needs: [prepare, release]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write # OIDC token for AWS
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+      commit: ${{ needs.prepare.outputs.commit }}
