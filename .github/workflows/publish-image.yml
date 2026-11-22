@@ -4,9 +4,13 @@ name: Publish Image
 # passes on main, so only tested commits are published. Can also be run
 # manually from the Actions tab.
 #
+# Runs triggered by "Maven Tests" refuse commits that are not on main and skip
+# commits already published, so a test re-run never replaces an existing image.
+#
 # Required repository variables (Settings > Secrets and variables > Actions > Variables):
 #   AWS_REGION      e.g. us-east-1
 #   AWS_ROLE_ARN    IAM role GitHub assumes via OIDC, allowed to push to the repository
+#                   and to call ecr:DescribeImages on it
 #   ECR_REPOSITORY  ECR repository name, e.g. horse-inventory-service
 
 on:
@@ -38,6 +42,18 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.COMMIT_SHA }}
+          fetch-depth: 0 # full history for the ancestry check
+
+      # head_branch holds the tag name for tag runs, so a tag named "main"
+      # passes the branches filter. Use the full ref to avoid matching that tag.
+      - name: Verify commit is on main
+        if: github.event_name == 'workflow_run'
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$COMMIT_SHA" refs/remotes/origin/main; then
+            echo "::error::$COMMIT_SHA is not on main, refusing to publish."
+            exit 1
+          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -45,14 +61,35 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      # Any error other than "not found" fails the job rather than risk an overwrite.
+      - name: Check for existing image
+        id: published
+        if: github.event_name == 'workflow_run'
+        env:
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+        run: |
+          if output=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+              --image-ids "imageTag=$COMMIT_SHA" 2>&1); then
+            echo "::notice::$COMMIT_SHA is already published, skipping."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif grep -q ImageNotFoundException <<< "$output"; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$output" >&2
+            exit 1
+          fi
+
       - name: Log in to Amazon ECR
         id: ecr
+        if: steps.published.outputs.exists != 'true'
         uses: aws-actions/amazon-ecr-login@v2
 
-      - uses: docker/setup-buildx-action@v4
+      - if: steps.published.outputs.exists != 'true'
+        uses: docker/setup-buildx-action@v4
 
       - name: Image tags
         id: meta
+        if: steps.published.outputs.exists != 'true'
         uses: docker/metadata-action@v6
         with:
           images: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}
@@ -61,6 +98,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push
+        if: steps.published.outputs.exists != 'true'
         uses: docker/build-push-action@v7
         with:
           context: .
