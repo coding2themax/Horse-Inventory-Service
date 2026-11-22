@@ -1,11 +1,11 @@
 name: Publish Image
 
-# Builds the Docker image and pushes it to Amazon ECR after "Maven Tests"
-# passes on main, so only tested commits are published. Can also be run
-# manually from the Actions tab.
+# Builds the Docker image and pushes it to Amazon ECR when a GitHub release is
+# published. Drafts and prereleases do not publish an image.
 #
-# Runs triggered by "Maven Tests" refuse commits that are not on main and skip
-# commits already published, so a test re-run never replaces an existing image.
+# The release commit must be on main and have a successful "Maven Tests" run.
+# A release tag already in ECR is never rebuilt, and "latest" only moves for
+# the repository's latest release.
 #
 # Required repository variables (Settings > Secrets and variables > Actions > Variables):
 #   AWS_REGION      e.g. us-east-1
@@ -14,45 +14,61 @@ name: Publish Image
 #   ECR_REPOSITORY  ECR repository name, e.g. horse-inventory-service
 
 on:
-  workflow_run:
-    workflows: [Maven Tests]
-    types: [completed]
-    branches: [main]
-  workflow_dispatch:
+  release:
+    types: [released]
 
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
 permissions:
+  actions: read # look up the Maven Tests run for the release commit
   contents: read
   id-token: write # OIDC token for AWS
 
 jobs:
   publish:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.event == 'push' ||
-        github.event.workflow_run.event == 'workflow_dispatch'))
     runs-on: ubuntu-latest
     env:
-      COMMIT_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      COMMIT_SHA: ${{ github.sha }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.COMMIT_SHA }}
           fetch-depth: 0 # full history for the ancestry check
 
-      # head_branch holds the tag name for tag runs, so a tag named "main"
-      # passes the branches filter. Use the full ref to avoid matching that tag.
+      # Use the full ref so a tag named "main" cannot satisfy the check.
       - name: Verify commit is on main
-        if: github.event_name == 'workflow_run'
         run: |
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           if ! git merge-base --is-ancestor "$COMMIT_SHA" refs/remotes/origin/main; then
             echo "::error::$COMMIT_SHA is not on main, refusing to publish."
             exit 1
+          fi
+
+      # The Docker build skips tests, so the release relies on this check.
+      - name: Verify Maven Tests passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh run list --workflow maven-tests.yml --commit "$COMMIT_SHA" \
+            --status success --limit 1 --json databaseId --jq length)
+          if [ "$passed" -eq 0 ]; then
+            echo "::error::$COMMIT_SHA has no successful Maven Tests run, refusing to publish."
+            exit 1
+          fi
+
+      - name: Check whether this is the latest release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+          if [ "$current" = "$RELEASE_TAG" ]; then
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Configure AWS credentials
@@ -64,13 +80,12 @@ jobs:
       # Any error other than "not found" fails the job rather than risk an overwrite.
       - name: Check for existing image
         id: published
-        if: github.event_name == 'workflow_run'
         env:
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
         run: |
           if output=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
-              --image-ids "imageTag=$COMMIT_SHA" 2>&1); then
-            echo "::notice::$COMMIT_SHA is already published, skipping."
+              --image-ids "imageTag=$RELEASE_TAG" 2>&1); then
+            echo "::notice::$RELEASE_TAG is already published, skipping."
             echo "exists=true" >> "$GITHUB_OUTPUT"
           elif grep -q ImageNotFoundException <<< "$output"; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -93,9 +108,10 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}
+          flavor: latest=false
           tags: |
-            type=raw,value=${{ env.COMMIT_SHA }}
-            type=raw,value=latest
+            type=raw,value=${{ env.RELEASE_TAG }}
+            type=raw,value=latest,enable=${{ steps.release.outputs.latest }}
 
       - name: Build and push
         if: steps.published.outputs.exists != 'true'

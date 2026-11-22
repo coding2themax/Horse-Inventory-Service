@@ -23,10 +23,12 @@ docker build -t horse-inventory-service .
 docker run -p 8080:8080 -e HORSE_REPO_SERVICE_URL=http://host.docker.internal:13000 horse-inventory-service
 ```
 
-After **Maven Tests** passes on `main`, the **Publish Image** workflow pushes the
-image to Amazon ECR tagged with the commit SHA and `latest`. It authenticates
-through GitHub OIDC and reads these repository variables: `AWS_REGION`,
-`AWS_ROLE_ARN` and `ECR_REPOSITORY`.
+Publishing a GitHub release runs the **Publish Image** workflow, which pushes the
+image to Amazon ECR tagged with the release tag, plus `latest` for the repository's
+latest release. The release commit must be on `main` and have passed **Maven Tests**.
+Drafts and prereleases do not publish an image. The workflow authenticates through
+GitHub OIDC and reads these repository variables: `AWS_REGION`, `AWS_ROLE_ARN` and
+`ECR_REPOSITORY`.
 
 ## Configuration
 
